@@ -28,8 +28,8 @@ def index()->None:
 @app.route("/main")
 def main()->None:
     students:list = getall('students')
-    att:dict = {r['student_id']:r['ts'] for r in getprocess(
-        "SELECT student_id,ts FROM attendance WHERE day=?",
+    att:dict = {r['student_id']:r['status'] for r in getprocess(
+        "SELECT student_id,status FROM attendance WHERE day=?",
         [date.today().isoformat()])}
     return render_template('main.html',students=students,att=att)
 
@@ -62,6 +62,18 @@ def update(sid:int)->None:
     return redirect('/main')
 
 
+# PENDING means "no row for today"; ABSENT is an explicit mark that a scan can override
+@app.route("/mark/<int:sid>/<status>")
+def mark(sid:int,status:str)->None:
+    today:str = date.today().isoformat()
+    if status=='absent':
+        addrecord('attendance',student_id=sid,day=today,
+            ts=datetime.now().strftime('%H:%M:%S'),status='absent')
+    else:
+        postprocess("DELETE FROM attendance WHERE student_id=? AND day=?",[sid,today])
+    return redirect('/main')
+
+
 # /scan GET renders base.html directly: its default content block holds the scanner and today's rows
 @app.route("/scan",methods=['GET','POST'])
 def scan():
@@ -72,10 +84,17 @@ def scan():
             return jsonify(ok=False,status='unknown')
         student:any = rows[0]
         name:str = f"{student['lastname']}, {student['firstname']}"
+        now:str = datetime.now().strftime('%H:%M:%S')
+        today:str = date.today().isoformat()
         added:bool = addrecord('attendance',
             student_id=student['id'],
-            day=date.today().isoformat(),
-            ts=datetime.now().strftime('%H:%M:%S'))
+            day=today,
+            ts=now)
+        if not added:
+            # row exists: flip an ABSENT mark back to PRESENT, leave a real PRESENT alone
+            added = postprocess(
+                "UPDATE attendance SET status='present',ts=? "
+                "WHERE student_id=? AND day=? AND status<>'present'",[now,student['id'],today])
         return jsonify(ok=True,
             status='present' if added else 'already',
             name=name,
@@ -83,7 +102,7 @@ def scan():
     today:str = date.today().isoformat()
     rows:list = getprocess("""SELECT s.idno,s.lastname,s.firstname,a.ts
         FROM attendance a JOIN students s ON s.id=a.student_id
-        WHERE a.day=? ORDER BY a.ts""",[today])
+        WHERE a.day=? AND a.status='present' ORDER BY a.ts""",[today])
     return render_template('base.html',rows=rows,today=today)
 
 

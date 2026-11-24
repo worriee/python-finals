@@ -67,10 +67,13 @@
 						<td>{{ student['course'] }}</td>
 						<td>{{ student['level'] }}</td>
 						<td>
-							{% if att.get(student['id']) %}
+							{% set st = att.get(student['id']) %}
+							{% if st == 'present' %}
 							<span class="w3-text-green">PRESENT</span>
+							{% elif st == 'absent' %}
+							<a class="w3-text-red" href="/mark/{{ student['id'] }}/pending" title="Click to clear the mark">ABSENT</a>
 							{% else %}
-							<span class="w3-text-grey">ABSENT</span>
+							<a class="w3-text-grey" href="/mark/{{ student['id'] }}/absent" title="Click to mark absent">PENDING</a>
 							{% endif %}
 						</td>
 						<td>
