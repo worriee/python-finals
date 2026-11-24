@@ -1,0 +1,10 @@
+AGENTS.md
+opencode.json
+.opencode/
+db/__pycache__/
+venv/
+__pycache__/
+*.db
+qr/
+db/sqlite3.exe
+xxx.png

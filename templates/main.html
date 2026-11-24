@@ -1,0 +1,157 @@
+{% extends 'base.html'%}
+{% block content %}
+	<div class="w3-row-padding">
+		<div class="w3-col m4">
+			<fieldset>
+				<legend>STUDENT</legend>
+				<form method="post" action="/add">
+					<p>
+						<label><b>IDNO</b></label>
+						<input type="number" name="idno" class="w3-input w3-border" required/>
+					</p>
+					<p>
+						<label><b>LASTNAME</b></label>
+						<input type="text" name="lastname" class="w3-input w3-border" required/>
+					</p>
+					<p>
+						<label><b>FIRSTNAME</b></label>
+						<input type="text" name="firstname" class="w3-input w3-border" required/>
+					</p>
+					<p>
+						<label><b>COURSE</b></label>
+						<select name="course" class="w3-select w3-border">
+							<option value="bsit">INFORMATION TECH.</option>
+							<option value="bscs">COMPUTER SCIENCE</option>
+							<option value="dait">DIPLOMA IN APPLIED IT</option>
+						</select>
+					</p>
+					<p>
+						<label><b>LEVEL</b></label>
+						<select name="level" class="w3-select w3-border">
+							<option value="1">First YEAR</option>
+							<option value="2">Second YEAR</option>
+							<option value="3">Third YEAR</option>
+							<option value="4">Fourth YEAR</option>
+						</select>
+					</p>
+					<p>
+						<input type="submit" value="SAVE" class="w3-button w3-blue"/>
+						<input type="reset" value="CANCEL" class="w3-button w3-red"/>
+					</p>
+				</form>
+			</fieldset>
+		</div>
+		<div class="w3-col m8">
+			<fieldset>
+				<legend>STUDENT LIST</legend>
+				<table class="w3-table-all">
+					<tr>
+						<th>IDNO</th>
+						<th>LASTNAME</th>
+						<th>FIRSTNAME</th>
+						<th>COURSE</th>
+						<th>LEVEL</th>
+						<th>ATTENDANCE</th>
+						<th>CONTROL</th>
+					</tr>
+					{% for student in students %}
+					<tr data-id="{{ student['id'] }}"
+						data-idno="{{ student['idno'] }}"
+						data-lastname="{{ student['lastname'] }}"
+						data-firstname="{{ student['firstname'] }}"
+						data-course="{{ student['course'] }}"
+						data-level="{{ student['level'] }}">
+						<td>{{ student['idno'] }}</td>
+						<td>{{ student['lastname'] }}</td>
+						<td>{{ student['firstname'] }}</td>
+						<td>{{ student['course'] }}</td>
+						<td>{{ student['level'] }}</td>
+						<td>
+							{% if att.get(student['id']) %}
+							<span class="w3-text-green">PRESENT</span>
+							{% else %}
+							<span class="w3-text-grey">ABSENT</span>
+							{% endif %}
+						</td>
+						<td>
+							<a class="w3-button w3-teal" href="/qr/{{ student['id'] }}" target="_blank" rel="noopener" title="QR" aria-label="QR">
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px" aria-hidden="true">
+									<rect x="3" y="3" width="6" height="6"/>
+									<rect x="15" y="3" width="6" height="6"/>
+									<rect x="3" y="15" width="6" height="6"/>
+									<path d="M14 14h3v3h-3zM19 14h2v2h-2zM14 19h2v2h-2zM18 18h3v3h-3z" fill="currentColor" stroke="none"/>
+								</svg>
+							</a>
+							<button class="w3-button w3-blue" onclick="editRow(this)" title="Edit" aria-label="Edit">
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-3px" aria-hidden="true">
+									<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+								</svg>
+							</button>
+							<form method="post" action="/delete/{{ student['id'] }}" style="display:inline" onsubmit="return confirm('Delete this student?')">
+								<button class="w3-button w3-red">&times;</button>
+							</form>
+						</td>
+					</tr>
+					{% endfor %}
+				</table>
+			</fieldset>
+		</div>
+	</div>
+	<div id="studentmodal" class="w3-modal">
+		<div class="w3-modal-content w3-animate-top" style="max-width:480px">
+			<div class="w3-container w3-teal">
+				<h4>STUDENT</h4>
+				<span class="w3-display-topright w3-button" onclick="document.getElementById('studentmodal').style.display='none'">&times;</span>
+			</div>
+			<div class="w3-container">
+				<form id="editform" method="post">
+					<p>
+						<label><b>IDNO</b></label>
+						<input type="text" id="e_idno" class="w3-input w3-border" disabled/>
+					</p>
+					<p>
+						<label><b>LASTNAME</b></label>
+						<input type="text" id="e_lastname" name="lastname" class="w3-input w3-border" required/>
+					</p>
+					<p>
+						<label><b>FIRSTNAME</b></label>
+						<input type="text" id="e_firstname" name="firstname" class="w3-input w3-border" required/>
+					</p>
+					<p>
+						<label><b>COURSE</b></label>
+						<select id="e_course" name="course" class="w3-select w3-border">
+							<option value="bsit">INFORMATION TECH.</option>
+							<option value="bscs">COMPUTER SCIENCE</option>
+							<option value="dait">DIPLOMA IN APPLIED IT</option>
+						</select>
+					</p>
+					<p>
+						<label><b>LEVEL</b></label>
+						<select id="e_level" name="level" class="w3-select w3-border">
+							<option value="1">First YEAR</option>
+							<option value="2">Second YEAR</option>
+							<option value="3">Third YEAR</option>
+							<option value="4">Fourth YEAR</option>
+						</select>
+					</p>
+					<p class="w3-right">
+						<input type="submit" value="SAVE" class="w3-button w3-blue"/>
+						<input type="button" value="CANCEL" class="w3-button w3-red" onclick="document.getElementById('studentmodal').style.display='none'"/>
+					</p>
+				</form>
+			</div>
+		</div>
+	</div>
+	<script>
+	function editRow(btn){
+		var tr = btn.closest('tr');
+		document.getElementById('e_idno').value = tr.dataset.idno;
+		document.getElementById('e_lastname').value = tr.dataset.lastname;
+		document.getElementById('e_firstname').value = tr.dataset.firstname;
+		document.getElementById('e_course').value = tr.dataset.course;
+		document.getElementById('e_level').value = tr.dataset.level;
+		document.getElementById('editform').action = '/update/' + tr.dataset.id;
+		document.getElementById('studentmodal').style.display = 'block';
+	}
+	</script>
+{% endblock %}
