@@ -35,8 +35,8 @@
 	var busy = false;
 	var paused = false;
 	var CAM_MSG = {
-		NotAllowedError: 'CAM ERROR: permission blocked',
-		NotReadableError: 'CAM ERROR: scrcpy issue'
+		NotAllowedError: 'CAM ERROR: check browser permissions',
+		NotReadableError: 'CAM ERROR: check scrcpy'
 	};
 
 	function show(color, text){
@@ -62,18 +62,18 @@
 		.then(function(r){ return r.json(); })
 		.then(function(d){
 			if(d.ok){
-				show('w3-green', 'FOUND — ' + d.lastname + ', ' + d.firstname);
+				show('w3-green', 'FOUND: ' + d.lastname + ', ' + d.firstname);
 				document.getElementById('d_idno').textContent = d.idno;
 				document.getElementById('d_lastname').textContent = d.lastname;
 				document.getElementById('d_firstname').textContent = d.firstname;
 				document.getElementById('d_course').textContent = d.course;
 				document.getElementById('d_level').textContent = d.level;
 			}
-			else show('w3-red', 'UNKNOWN CODE');
+			else show('w3-red', 'UNKNOWN QR CODE');
 			paused = true;
 			setTimeout(function(){ paused = false; }, 2000);
 		})
-		.catch(function(e){ show('w3-red', 'ERROR — ' + e.message); })
+		.catch(function(e){ show('w3-red', 'ERROR: ' + e.message); })
 		.finally(function(){ busy = false; });
 	}
 
@@ -102,7 +102,7 @@
 			})
 			.catch(function(){ /* keep the phase-1 camera */ });
 		})
-		.catch(function(e){ show('w3-red', CAM_MSG[e.name] || 'CAM ERROR: device cam issue'); });
+		.catch(function(e){ show('w3-red', CAM_MSG[e.name] || 'CAM ERROR: device/cam issue'); });
 	}
 
 	startCamera();
