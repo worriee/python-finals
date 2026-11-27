@@ -15,22 +15,13 @@
 		</div>
 		<div class="w3-col m6">
 			<fieldset>
-				<legend>ATTENDANCE — {{ today }}</legend>
+				<legend>STUDENT</legend>
 				<table class="w3-table-all">
-					<tr>
-						<th>IDNO</th>
-						<th>LASTNAME</th>
-						<th>FIRSTNAME</th>
-						<th>TIME</th>
-					</tr>
-					{% for row in rows %}
-					<tr>
-						<td>{{ row['idno'] }}</td>
-						<td>{{ row['lastname'] }}</td>
-						<td>{{ row['firstname'] }}</td>
-						<td>{{ row['ts']|clock }}</td>
-					</tr>
-					{% endfor %}
+					<tr><td><b>IDNO</b></td><td id="d_idno">—</td></tr>
+					<tr><td><b>LASTNAME</b></td><td id="d_lastname">—</td></tr>
+					<tr><td><b>FIRSTNAME</b></td><td id="d_firstname">—</td></tr>
+					<tr><td><b>COURSE</b></td><td id="d_course">—</td></tr>
+					<tr><td><b>LEVEL</b></td><td id="d_level">—</td></tr>
 				</table>
 			</fieldset>
 		</div>
@@ -70,11 +61,14 @@
 		})
 		.then(function(r){ return r.json(); })
 		.then(function(d){
-			if(d.status === 'present'){
-				show('w3-green', 'PRESENT — ' + d.name);
-				setTimeout(function(){ location.reload(); }, 2000);
+			if(d.ok){
+				show('w3-green', 'FOUND — ' + d.lastname + ', ' + d.firstname);
+				document.getElementById('d_idno').textContent = d.idno;
+				document.getElementById('d_lastname').textContent = d.lastname;
+				document.getElementById('d_firstname').textContent = d.firstname;
+				document.getElementById('d_course').textContent = d.course;
+				document.getElementById('d_level').textContent = d.level;
 			}
-			else if(d.status === 'already') show('w3-amber', 'ALREADY RECORDED — ' + d.name);
 			else show('w3-red', 'UNKNOWN CODE');
 			paused = true;
 			setTimeout(function(){ paused = false; }, 2000);

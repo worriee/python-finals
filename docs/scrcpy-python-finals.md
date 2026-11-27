@@ -144,8 +144,8 @@ A new student already gets a `token` when added, so their QR payload exists
 immediately; the picture is what needs generating (or, once implemented, the
 `QR` button on `/main`).
 
-Scan flow: hold the card in front of the camera → green `PRESENT` → page reloads
-after 2 s and the row appears in the attendance table.
+Scan flow: hold the card in front of the camera → green `FOUND` → the student
+card on the right fills in. Nothing is recorded.
 
 ## 8. Troubleshooting
 

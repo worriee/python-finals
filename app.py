@@ -3,7 +3,6 @@ import os
 import re
 import qrcode
 from io import BytesIO
-from datetime import date,datetime
 from secrets import token_hex
 sys.path.insert(0,'db/')
 from flask import Flask,render_template,request,redirect,jsonify,abort,send_file
@@ -11,15 +10,6 @@ from dbhelper import *
 
 
 app:any = Flask(__name__)
-
-
-# attendance.ts is stored 24h for correct ORDER BY; render it 12h for humans
-@app.template_filter('clock')
-def clock(ts:str)->str:
-    try:
-        return datetime.strptime(ts,'%H:%M:%S').strftime('%I:%M %p').lstrip('0')
-    except (ValueError,TypeError):
-        return ts
 
 
 @app.route("/")
@@ -30,10 +20,7 @@ def index()->None:
 @app.route("/main")
 def main()->None:
     students:list = getall('students')
-    att:dict = {r['student_id']:r['status'] for r in getprocess(
-        "SELECT student_id,status FROM attendance WHERE day=?",
-        [date.today().isoformat()])}
-    return render_template('main.html',students=students,att=att)
+    return render_template('main.html',students=students)
 
 
 @app.route("/add",methods=['POST'])
@@ -65,19 +52,7 @@ def update(sid:int)->None:
     return redirect('/main')
 
 
-# PENDING means "no row for today"; ABSENT is an explicit mark that a scan can override
-@app.route("/mark/<int:sid>/<status>")
-def mark(sid:int,status:str)->None:
-    today:str = date.today().isoformat()
-    if status=='absent':
-        addrecord('attendance',student_id=sid,day=today,
-            ts=datetime.now().strftime('%H:%M:%S'),status='absent')
-    else:
-        postprocess("DELETE FROM attendance WHERE student_id=? AND day=?",[sid,today])
-    return redirect('/main')
-
-
-# /scan GET renders scan.html: scanner plus today's present rows
+# /scan is a viewer: it looks up the scanned student and returns their details
 @app.route("/scan",methods=['GET','POST'])
 def scan():
     if request.method=='POST':
@@ -87,34 +62,14 @@ def scan():
         rows:list = getrecord('students',idno=idno)
         if not rows:
             return jsonify(ok=False,status='unknown')
-        student:any = rows[0]
-        name:str = f"{student['lastname']}, {student['firstname']}"
-        now:str = datetime.now().strftime('%H:%M:%S')
-        today:str = date.today().isoformat()
-        added:bool = addrecord('attendance',
-            student_id=student['id'],
-            day=today,
-            ts=now)
-        if not added:
-            # row exists: flip an ABSENT mark back to PRESENT, leave a real PRESENT alone
-            added = postprocess(
-                "UPDATE attendance SET status='present',ts=? "
-                "WHERE student_id=? AND day=? AND status<>'present'",[now,student['id'],today])
+        s:any = rows[0]
         return jsonify(ok=True,
-            status='present' if added else 'already',
-            name=name,
-            idno=student['idno'])
-    today:str = date.today().isoformat()
-    rows:list = getprocess("""SELECT s.idno,s.lastname,s.firstname,a.ts
-        FROM attendance a JOIN students s ON s.id=a.student_id
-        WHERE a.day=? AND a.status='present' ORDER BY a.ts""",[today])
-    return render_template('scan.html',rows=rows,today=today)
-
-
-# kept so old /attendance links do not 404; the page now lives on /scan
-@app.route("/attendance")
-def attendance()->None:
-    return redirect('/scan')
+            idno=s['idno'],
+            lastname=s['lastname'],
+            firstname=s['firstname'],
+            course=s['course'],
+            level=s['level'])
+    return render_template('scan.html')
 
 
 # QR picture built in memory from the readable payload "lastname idno": nothing is written to disk
