@@ -132,27 +132,12 @@ on one does not apply to the other.
 The page prefers a device labelled `PhoneCam`; with scrcpy running it shows the phone.
 With scrcpy stopped it silently falls back to the laptop camera.
 
-## 7. QR cards
-
-Batch, one PNG per student:
-
-```bash
-venv/bin/python make_qr.py     # writes qr/<idno>.png
-```
-
-A new student already gets a `token` when added, so their QR payload exists
-immediately; the picture is what needs generating (or, once implemented, the
-`QR` button on `/main`).
-
-Scan flow: hold the card in front of the camera → green `FOUND` → the student
-card on the right fills in. Nothing is recorded.
-
-## 8. Troubleshooting
+## 7. Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
 | `IllegalArgumentException` in `MediaCodec.native_configure`, `Demuxer error` | default camera size 4096×3072 exceeds the MTK encoder | keep `--camera-size=1280x720` |
-| `CAM ERROR: permission blocked` | browser denied the camera for this origin | allow camera in site settings, reload |
+| `CAM ERROR: check browser permissions` | browser denied the camera for this origin | allow camera in site settings, reload |
 | `CAM ERROR: scrcpy issue` | `/dev/video2` exists but nothing writes to it | start scrcpy with `--v4l2-sink` |
 | `CAM ERROR: device cam issue` | no camera, or the requested device cannot be opened | check `v4l2-ctl --list-devices`, restart scrcpy |
 | `UNKNOWN CODE` | a QR was decoded, but its text is not a student token | scan `qr/<idno>.png` instead |
@@ -160,7 +145,7 @@ card on the right fills in. Nothing is recorded.
 | `ffmpeg` seems to hang on `/dev/video2` | no writer attached to the loopback | start scrcpy first, never test the device before it |
 | video blank, `fuser` empty | scrcpy exited or the phone disconnected | rerun the command, check `adb devices` |
 
-## 9. Stop
+## 8. Stop
 
 `Ctrl+C` in the scrcpy terminal, then confirm:
 
@@ -171,7 +156,7 @@ fuser -v /dev/video2     # empty output = stopped
 Closing scrcpy does not close the browser; `/scan` simply falls back to the
 laptop camera on the next load.
 
-## 10. Notes
+## 9. Notes
 
 - 720p over Wi-Fi adb is fine for QR decoding; 1080p is untested on this encoder.
 - The loopback device is created at boot (`exclusive_caps=1`, label `PhoneCam`).
