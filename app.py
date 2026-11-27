@@ -1,5 +1,6 @@
 import sys
 import os
+import re
 import qrcode
 from io import BytesIO
 from datetime import date,datetime
@@ -76,12 +77,14 @@ def mark(sid:int,status:str)->None:
     return redirect('/main')
 
 
-# /scan GET renders base.html directly: its default content block holds the scanner and today's rows
+# /scan GET renders scan.html: scanner plus today's present rows
 @app.route("/scan",methods=['GET','POST'])
 def scan():
     if request.method=='POST':
-        token:str = (request.get_json(silent=True) or {}).get('token','')
-        rows:list = getrecord('students',token=token)
+        text:str = (request.get_json(silent=True) or {}).get('token','').strip()
+        m = re.match(r'^(.*?)\s*(\d+)$', text)
+        idno:str = m.group(2) if m else text
+        rows:list = getrecord('students',idno=idno)
         if not rows:
             return jsonify(ok=False,status='unknown')
         student:any = rows[0]
@@ -114,17 +117,14 @@ def attendance()->None:
     return redirect('/scan')
 
 
-# QR picture built in memory from students.token: nothing is written to disk
+# QR picture built in memory from the readable payload "lastname idno": nothing is written to disk
 @app.route("/qr/<int:sid>")
 def qr(sid:int)->None:
     rows:list = getrecord('students',id=sid)
     if not rows: abort(404)
-    token:str = rows[0]['token']
-    if not token:
-        token = token_hex(4)
-        updaterecord('students',id=sid,token=token)
+    payload:str = f"{(rows[0]['lastname'] or '').lower()} {rows[0]['idno']}"
     buf = BytesIO()
-    qrcode.make(token).save(buf,format='PNG')
+    qrcode.make(payload).save(buf,format='PNG')
     buf.seek(0)
     return send_file(buf,mimetype='image/png',
                      download_name=f"qr-{rows[0]['idno']}.png")
