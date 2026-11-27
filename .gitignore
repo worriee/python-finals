@@ -7,3 +7,4 @@ __pycache__/
 *.db
 db/sqlite3.exe
 xxx.png
+static/img/

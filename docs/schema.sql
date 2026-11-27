@@ -10,7 +10,8 @@ CREATE TABLE students(
   firstname varchar(50),
   course varchar(10),
   level varchar(5),
-  token varchar(16)                          -- QR payload, NULL until backfilled
+  token varchar(16),                          -- QR payload, NULL until backfilled
+  image TEXT                                  -- registration photo: static/img/<idno>.png
 );
 
 -- Unique so two students can never share a QR code.

@@ -5,138 +5,18 @@
 		<meta http-equiv="X-UA-Compatible" content="ie-edge">
 		<meta name="viewport" content="width=device-width,initial-scale=1.0">
 		<link rel="stylesheet" href="{{ url_for('static',filename='css/w3.css') }}"/>
-		<style>
-		.w3-bar .navbtn{padding:6px 14px;font-size:14px;background-color:#5c6bc0}
-		.w3-bar .navbtn:hover{background-color:#5c6bc0!important;color:#fff!important}
-		.navbtn + .navbtn{margin-left:8px}
-		</style>
 		<title>SCHOOL v1.0</title>
 	</head>
 	<body>
-		<div class="w3-bar w3-indigo w3-container w3-padding" style="display:flex;align-items:center">
+		<div class="w3-bar w3-indigo w3-container w3-padding">
 			<div class="w3-bar-item">SCHOOL v1.0</div>
-			<div style="margin-left:auto">
-				{% block menu%}
-				<a href="/main" class="w3-bar-item w3-button navbtn">MAIN</a>
-				<a href="/scan" class="w3-bar-item w3-button navbtn">SCAN</a>
+			<div class="w3-bar-item w3-right">
+				{% block menu %}
 				{% endblock %}
 			</div>
 		</div>
 		<div class="w3-container w3-padding-16">
 			{% block content %}
-			<div class="w3-row-padding">
-				<div class="w3-col m6">
-					<!-- Scanner: live camera feed and scan result -->
-					<fieldset>
-						<legend>SCAN</legend>
-						<video id="video" autoplay playsinline muted class="w3-border" style="width:100%;max-width:640px"></video>
-						<canvas id="canvas" style="display:none"></canvas>
-						<div id="result" class="w3-panel w3-border w3-padding-32 w3-center" style="font-size:2em">READY</div>
-					</fieldset>
-				</div>
-				<div class="w3-col m6">
-					<!-- Attendance: today's scanned students, refreshed after each scan -->
-					<fieldset>
-						<legend>ATTENDANCE — {{ today }}</legend>
-						<table class="w3-table-all">
-							<tr>
-								<th>IDNO</th>
-								<th>LASTNAME</th>
-								<th>FIRSTNAME</th>
-								<th>TIME</th>
-							</tr>
-							{% for row in rows %}
-							<tr>
-								<td>{{ row['idno'] }}</td>
-								<td>{{ row['lastname'] }}</td>
-								<td>{{ row['firstname'] }}</td>
-								<td>{{ row['ts']|clock }}</td>
-							</tr>
-							{% endfor %}
-						</table>
-					</fieldset>
-				</div>
-			</div>
-			<!-- Scan loop: decode QR, POST token, reload on a new record -->
-			<script src="{{ url_for('static',filename='js/jsqr.min.js') }}"></script>
-			<script>
-			var video = document.getElementById('video');
-			var canvas = document.getElementById('canvas');
-			var ctx = canvas.getContext('2d');
-			var result = document.getElementById('result');
-			var busy = false;
-			var paused = false;
-			var CAM_MSG = {
-				NotAllowedError: 'CAM ERROR: permission blocked',
-				NotReadableError: 'CAM ERROR: scrcpy issue'
-			};
-
-			function show(color, text){
-				result.className = 'w3-panel w3-border w3-padding-32 w3-center ' + color;
-				result.style.fontSize = '2em';
-				result.textContent = text;
-			}
-
-			function tick(){
-				if(busy || paused || video.readyState < 2) return;
-				canvas.width = video.videoWidth;
-				canvas.height = video.videoHeight;
-				ctx.drawImage(video, 0, 0);
-				var img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-				var code = jsQR(img.data, img.width, img.height);
-				if(!code) return;
-				busy = true;
-				fetch('/scan', {
-					method: 'POST',
-					headers: {'Content-Type': 'application/json'},
-					body: JSON.stringify({token: code.data.trim()})
-				})
-				.then(function(r){ return r.json(); })
-				.then(function(d){
-					if(d.status === 'present'){
-						show('w3-green', 'PRESENT — ' + d.name);
-						setTimeout(function(){ location.reload(); }, 2000);
-					}
-					else if(d.status === 'already') show('w3-amber', 'ALREADY RECORDED — ' + d.name);
-					else show('w3-red', 'UNKNOWN CODE');
-					paused = true;
-					setTimeout(function(){ paused = false; }, 2000);
-				})
-				.catch(function(e){ show('w3-red', 'ERROR — ' + e.message); })
-				.finally(function(){ busy = false; });
-			}
-
-			var started = false;
-
-			// two-phase camera start: labels/device ids are anonymized until permission is granted
-			function startCamera(){
-				navigator.mediaDevices.getUserMedia({video: {width: {ideal: 1280}}})
-				.then(function(stream){
-					video.srcObject = stream;
-					video.play();
-					if(!started){
-						started = true;
-						setInterval(tick, 150);
-					}
-					navigator.mediaDevices.enumerateDevices()
-					.then(function(devices){
-						var cam = devices.filter(function(d){ return d.kind === 'videoinput'; })
-							.find(function(d){ return (d.label || '').indexOf('PhoneCam') >= 0; });
-						if(!cam || !cam.deviceId) return;
-						return navigator.mediaDevices.getUserMedia({video: {deviceId: {exact: cam.deviceId}, width: {ideal: 1280}}})
-						.then(function(stream2){
-							stream.getTracks().forEach(function(t){ t.stop(); });
-							video.srcObject = stream2;
-							video.play();
-						});
-					})
-					.catch(function(){ /* keep the phase-1 camera */ });
-				})
-				.catch(function(e){ show('w3-red', CAM_MSG[e.name] || 'CAM ERROR: device cam issue'); });
-			}
-
-			startCamera();
-			</script>
 			{% endblock %}
 			<center>
 				<hr/>

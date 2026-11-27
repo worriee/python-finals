@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% block menu %}
+<a href="/main" class="w3-bar-item w3-button">MAIN</a>
+{% endblock %}
+{% block content %}
+	<div class="w3-row-padding">
+		<div class="w3-half">
+			<div class="w3-card-4 w3-padding">
+				<div id="picture">
+					<video id="video" autoplay playsinline muted style="width:100%"></video>
+				</div>
+				<p>
+					<label><b>IDNO</b></label>
+					<input type="number" id="idno" class="w3-input w3-border"/>
+				</p>
+				<p>
+					<label><b>LASTNAME</b></label>
+					<input type="text" id="lastname" class="w3-input w3-border"/>
+				</p>
+				<p>
+					<label><b>FIRSTNAME</b></label>
+					<input type="text" id="firstname" class="w3-input w3-border"/>
+				</p>
+				<p>
+					<label><b>COURSE</b></label>
+					<select id="course" class="w3-select w3-border">
+						<option value="bsit">INFORMATION TECH.</option>
+						<option value="bscs">COMPUTER SCIENCE</option>
+						<option value="dait">DIPLOMA IN APPLIED IT</option>
+					</select>
+				</p>
+				<p>
+					<label><b>LEVEL</b></label>
+					<select id="level" class="w3-select w3-border">
+						<option value="1">First YEAR</option>
+						<option value="2">Second YEAR</option>
+						<option value="3">Third YEAR</option>
+						<option value="4">Fourth YEAR</option>
+					</select>
+				</p>
+				<p class="w3-center">
+					<button type="button" class="w3-button w3-blue" onclick="take_picture()">SNAP</button>
+				</p>
+			</div>
+		</div>
+		<div class="w3-half">
+			<div class="w3-card-4 w3-padding">
+				<div id="mypicture" class="w3-center"></div>
+				<table class="w3-table-all">
+					<tr><td><b>IDNO</b></td><td><div id="myidno"></div></td></tr>
+					<tr><td><b>LASTNAME</b></td><td><div id="mylastname"></div></td></tr>
+					<tr><td><b>FIRSTNAME</b></td><td><div id="myfirstname"></div></td></tr>
+					<tr><td><b>COURSE</b></td><td><div id="mycourse"></div></td></tr>
+					<tr><td><b>LEVEL</b></td><td><div id="mylevel"></div></td></tr>
+				</table>
+				<p class="w3-center">
+					<button type="button" class="w3-button w3-green" onclick="save_info()">SAVE</button>
+				</p>
+			</div>
+		</div>
+	</div>
+
+	<script>
+	var video = document.getElementById('video');
+	var canvas = document.createElement('canvas');
+	var snapBlob = null;
+	var CAM_MSG = {
+		NotAllowedError: 'CAM ERROR: permission blocked',
+		NotReadableError: 'CAM ERROR: scrcpy issue'
+	};
+
+	function camError(e){
+		alert(CAM_MSG[e.name] || 'CAM ERROR: device cam issue');
+	}
+
+	function startCamera(){
+		navigator.mediaDevices.getUserMedia({video: {width: {ideal: 1280}}})
+		.then(function(stream){
+			video.srcObject = stream;
+			video.play();
+			navigator.mediaDevices.enumerateDevices()
+			.then(function(devices){
+				var cam = devices.filter(function(d){ return d.kind === 'videoinput'; })
+					.find(function(d){ return (d.label || '').indexOf('PhoneCam') >= 0; });
+				if(!cam || !cam.deviceId) return;
+				return navigator.mediaDevices.getUserMedia({video: {deviceId: {exact: cam.deviceId}, width: {ideal: 1280}}})
+				.then(function(stream2){
+					stream.getTracks().forEach(function(t){ t.stop(); });
+					video.srcObject = stream2;
+					video.play();
+				});
+			})
+			.catch(function(){ /* keep the phase-1 camera */ });
+		})
+		.catch(camError);
+	}
+
+	function take_picture(){
+		if(video.readyState < 2) return;
+		canvas.width = video.videoWidth;
+		canvas.height = video.videoHeight;
+		canvas.getContext('2d').drawImage(video, 0, 0);
+		canvas.toBlob(function(blob){
+			snapBlob = blob;
+			var url = URL.createObjectURL(blob);
+			document.getElementById('picture').innerHTML = '<img id="imgprev" src="' + url + '" style="width:100%">';
+			document.getElementById('mypicture').innerHTML = '<img src="' + url + '" style="width:100%;max-width:240px">';
+			document.getElementById('myidno').innerHTML = document.getElementById('idno').value;
+			document.getElementById('mylastname').innerHTML = document.getElementById('lastname').value;
+			document.getElementById('myfirstname').innerHTML = document.getElementById('firstname').value;
+			document.getElementById('mycourse').innerHTML = document.getElementById('course').value;
+			document.getElementById('mylevel').innerHTML = document.getElementById('level').value;
+		}, 'image/png');
+	}
+
+	function save_info(){
+		if(!snapBlob){ alert('SNAP first'); return; }
+		var fd = new FormData();
+		fd.append('webcam', snapBlob, 'snap.png');
+		fd.append('idno', document.getElementById('idno').value);
+		fd.append('lastname', document.getElementById('lastname').value);
+		fd.append('firstname', document.getElementById('firstname').value);
+		fd.append('course', document.getElementById('course').value);
+		fd.append('level', document.getElementById('level').value);
+		fetch('/save', {method: 'POST', body: fd})
+		.then(function(r){
+			if(!r.ok) return r.text().then(function(t){ throw new Error(t); });
+			alert('New Student Added');
+		})
+		.catch(function(e){ alert('SAVE ERROR: ' + e.message); });
+	}
+
+	startCamera();
+	</script>
+{% endblock %}
